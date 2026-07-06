@@ -385,9 +385,27 @@ const LoginPage = ({onLogin}) => {
   const handleLogin=async()=>{
     setLoading(true);setError("");
     await new Promise(r=>setTimeout(r,900));
-    const cred=CREDS[role];
-    if(id.trim()===cred.id&&pass===cred.pass) onLogin({...cred});
-    else setError("Invalid ID or Password. Please try again.");
+    try {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/auth/login`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loginId: id, password: pass, role: role }),
+    }
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    setError(data.message || "Invalid ID or Password. Please try again.");
+    setLoading(false);
+    return;
+  }
+  localStorage.setItem("lcu_token", data.token);
+  localStorage.setItem("lcu_user", JSON.stringify(data.user));
+  onLogin({ ...data.user, token: data.token });
+} catch (err) {
+  setError("Cannot connect to server. Please try again.");
+};
     setLoading(false);
   };
   return (
