@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 // ─── MOBILE HOOK ──────────────────────────────────────────────────────────────
 const useIsMobile = () => {
@@ -998,6 +1000,27 @@ const StudentDashboard = ({user, timetable, setActiveTab, isMobile}) => {
   const myClasses=timetable.filter(t=>t.course?.department===user.department&&t.course?.level===user.level);
   const today=DAYS[Math.max(0,(new Date().getDay()-1+5)%5)];
   const todayClasses=myClasses.filter(t=>t.day===today);
+  const downloadPDF = async () => {
+  const element = document.getElementById("timetable-content");
+  if (!element) { alert("No timetable to download yet."); return; }
+  const canvas = await html2canvas(element, { scale: 2, useCORS: true });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("landscape", "mm", "a4");
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+  pdf.setFillColor(10, 31, 92);
+  pdf.rect(0, 0, pdfWidth, 20, "F");
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(14);
+  pdf.text("Lead City University, Ibadan", pdfWidth / 2, 10, { align: "center" });
+  pdf.setFontSize(9);
+  pdf.text("Automated Timetable & Course Allocation System", pdfWidth / 2, 16, { align: "center" });
+  pdf.addImage(imgData, "PNG", 0, 22, pdfWidth, pdfHeight);
+  pdf.setTextColor(100, 100, 100);
+  pdf.setFontSize(8);
+  pdf.text(`Generated on ${new Date().toLocaleDateString("en-NG")} | portal.lcu.edu.ng`, pdfWidth / 2, pdf.internal.pageSize.getHeight() - 5, { align: "center" });
+  pdf.save("LCU-Timetable.pdf");
+};
   return (
     <div style={{padding:isMobile?14:22}}>
       <Card style={{marginBottom:14}}>
@@ -1045,7 +1068,7 @@ const StudentDashboard = ({user, timetable, setActiveTab, isMobile}) => {
 
       <Card style={{marginBottom:14}}>
         <CardHeader title="📋 My Registered Courses"/>
-        <div style={{padding:12}}>
+        <div id="timetable-content" style={{padding:12}}>
           {myClasses.map(cls=>{
             const color=DEPT_COLORS[cls.course?.department]||C.lcuBlue;
             return (
@@ -1058,7 +1081,7 @@ const StudentDashboard = ({user, timetable, setActiveTab, isMobile}) => {
               </div>
             );
           })}
-          <button style={{width:"100%",marginTop:12,padding:"11px",background:C.navy,color:"#fff",border:"none",borderRadius:4,fontWeight:600,cursor:"pointer",fontSize:14}}>⬇ Download Timetable PDF</button>
+          <button onClick={downloadPDF} style={{width:"100%",marginTop:12,padding:"11px",background:C.navy,color:"#fff",border:"none",borderRadius:4,fontWeight:600,cursor:"pointer",fontSize:14}}>⬇ Download Timetable PDF</button>
         </div>
       </Card>
     </div>
