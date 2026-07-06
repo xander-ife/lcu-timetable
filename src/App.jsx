@@ -174,7 +174,7 @@ const TartanHeader = ({user, onLogout, onMenuToggle, isMobile}) => (
           <span style={{fontSize:17, cursor:"pointer"}}>🔔</span>
           {!isMobile && (
             <span style={{fontSize:13, color:C.textMuted, marginLeft:4}}>
-              {user.role==="Super Admin"?"Admin Portal":user.role==="Lecturer"?"Lecturer Portal":"Student Dashboard"}
+              {user.role==="ADMIN"?"Admin Portal":user.role==="LECTURER"?"Lecturer Portal":"Student Dashboard"}
               {" — "}Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"},{" "}
               <strong style={{color:C.navy}}>{user.name.split(" ").slice(-1)[0]}</strong>
             </span>
@@ -196,7 +196,7 @@ const BottomNav = ({user, activeTab, setActiveTab}) => {
   const adminNav=[{id:"dashboard",icon:"⊞",label:"Home"},{id:"timetable",icon:"📅",label:"Timetable"},{id:"generate",icon:"⚡",label:"Generate"},{id:"analytics",icon:"📊",label:"Analytics"},{id:"more",icon:"⋯",label:"More"}];
   const lecturerNav=[{id:"dashboard",icon:"⊞",label:"Home"},{id:"timetable",icon:"📅",label:"Schedule"},{id:"analytics",icon:"📊",label:"Workload"}];
   const studentNav=[{id:"dashboard",icon:"⊞",label:"Home"},{id:"timetable",icon:"📅",label:"Timetable"}];
-  const nav=user.role==="Super Admin"?adminNav:user.role==="Lecturer"?lecturerNav:studentNav;
+  const nav=user.role==="ADMIN"?adminNav:user.role==="LECTURER"?lecturerNav:studentNav;
   return (
     <div style={{position:"fixed", bottom:0, left:0, right:0, background:"#fff", borderTop:"2px solid #D0D8E8", display:"flex", zIndex:200, boxShadow:"0 -2px 10px rgba(0,0,0,0.1)"}}>
       {nav.map(item=>{
@@ -217,7 +217,7 @@ const Sidebar = ({user, activeTab, setActiveTab, mobileOpen, onClose}) => {
   const adminNav=[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"Timetable",icon:"📅"},{id:"courses",label:"Courses",icon:"📚"},{id:"lecturers",label:"Lecturers",icon:"👨‍🏫"},{id:"rooms",label:"Rooms",icon:"🏛"},{id:"generate",label:"Generate",icon:"⚡"},{id:"analytics",label:"Analytics",icon:"📊"},{id:"settings",label:"Settings",icon:"⚙"}];
   const lecturerNav=[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"My Schedule",icon:"📅"},{id:"analytics",label:"Workload",icon:"📊"}];
   const studentNav=[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"My Timetable",icon:"📅"}];
-  const nav=user.role==="Super Admin"?adminNav:user.role==="Lecturer"?lecturerNav:studentNav;
+  const nav=user.role==="ADMIN"?adminNav:user.role==="LECTURER"?lecturerNav:studentNav;
 
   const sidebarContent = (
     <div style={{width:210, background:"#fff", borderRight:"1px solid #D0D8E8", display:"flex", flexDirection:"column", height:"100%"}}>
@@ -270,9 +270,9 @@ const MobileDrawer = ({user, activeTab, setActiveTab, open, onClose}) => {
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:6, width:30, height:30, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>✕</button>
         </div>
         <div style={{padding:"8px 0", flex:1, overflowY:"auto"}}>
-          {(user.role==="Super Admin"
+          {(user.role==="ADMIN"
             ?[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"Timetable",icon:"📅"},{id:"courses",label:"Courses",icon:"📚"},{id:"lecturers",label:"Lecturers",icon:"👨‍🏫"},{id:"rooms",label:"Rooms",icon:"🏛"},{id:"generate",label:"Generate",icon:"⚡"},{id:"analytics",label:"Analytics",icon:"📊"},{id:"settings",label:"Settings",icon:"⚙"}]
-            :user.role==="Lecturer"
+            :user.role==="LECTURER"
             ?[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"My Schedule",icon:"📅"},{id:"analytics",label:"Workload",icon:"📊"}]
             :[{id:"dashboard",label:"Dashboard",icon:"⊞"},{id:"timetable",label:"My Timetable",icon:"📅"}]
           ).map(item=>{
@@ -377,7 +377,7 @@ const LoginPage = ({onLogin}) => {
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
   const CREDS={
-    admin:{id:"admin",pass:"admin123",name:"Dr. Emmanuel Adeyemi",role:"Super Admin"},
+    admin:{id:"admin",pass:"admin123",name:"Dr. Emmanuel Adeyemi",role:"ADMIN"},
     lecturer:{id:"LCU/SE/001",pass:"lect123",name:"Dr. Adebayo Okafor",role:"Lecturer",lecturerId:1},
     student:{id:"LCU/UG/22/21758",pass:"stud123",name:"EZEASOR Shedrack Ifechukwu",role:"Student",department:"Software Engineering",level:400},
   };
@@ -394,15 +394,17 @@ const LoginPage = ({onLogin}) => {
       body: JSON.stringify({ loginId: id, password: pass, role: role.toUpperCase() }),
     }
   );
-  const data = await response.json();
-  if (!response.ok) {
-    setError(data.message || "Invalid ID or Password. Please try again.");
-    setLoading(false);
-    return;
-  }
-  localStorage.setItem("lcu_token", data.token);
-  localStorage.setItem("lcu_user", JSON.stringify(data.user));
-  onLogin({ ...data.user, token: data.token });
+  const result = await response.json();
+if (!response.ok) {
+  setError(result.message || "Invalid ID or Password. Please try again.");
+  setLoading(false);
+  return;
+}
+const userData = result.data.user;
+const token = result.data.token;
+localStorage.setItem("lcu_token", token);
+localStorage.setItem("lcu_user", JSON.stringify(userData));
+onLogin({ ...userData, token });
 } catch (err) {
   setError("Cannot connect to server. Please try again.");
 };
@@ -432,10 +434,10 @@ const LoginPage = ({onLogin}) => {
               {error && <div style={{background:"#FFF0F0", border:"1px solid #FFCCCC", borderRadius:4, padding:"8px 12px", marginBottom:10, fontSize:12, color:C.danger}}>⚠️ {error}</div>}
               <div style={{marginBottom:12}}>
                 <label style={{fontSize:12, fontWeight:700, color:C.text, display:"block", marginBottom:4}}>
-                  {role==="admin"?"Admin ID":role==="lecturer"?"Staff ID":"Matriculation Number"}
+                  {role==="admin"?"Admin ID":role==="LECTURER"?"Staff ID":"Matriculation Number"}
                 </label>
                 <input value={id} onChange={e=>setId(e.target.value)}
-                  placeholder={role==="student"?"e.g. LCU/UG/22/21758":role==="lecturer"?"e.g. LCU/SE/001":"admin"}
+                  placeholder={role==="STUDENT"?"e.g. LCU/UG/22/21758":role==="LECTURER"?"e.g. LCU/SE/001":"admin"}
                   style={{width:"100%", padding:"10px 12px", border:"1px solid #D0D8E8", borderRadius:4, fontSize:14, fontFamily:"inherit", color:C.text, outline:"none"}}
                   onFocus={e=>e.target.style.borderColor=C.navy} onBlur={e=>e.target.style.borderColor="#D0D8E8"}
                   onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
@@ -550,8 +552,8 @@ const TimetableGrid = ({timetable, userRole, lecturerId, department, level, isMo
   const [filterDept,setFilterDept]=useState("All");
 
   const filtered=timetable.filter(t=>{
-    if(userRole==="Lecturer") return t.lecturer?.id===lecturerId;
-    if(userRole==="Student") return t.course?.department===department&&t.course?.level===level;
+    if(userRole==="LECTURER") return t.lecturer?.id===lecturerId;
+    if(userRole==="STUDENT") return t.course?.department===department&&t.course?.level===level;
     if(activeDay&&t.day!==activeDay) return false;
     if(filterDept!=="All"&&t.course?.department!==filterDept) return false;
     return true;
@@ -562,7 +564,7 @@ const TimetableGrid = ({timetable, userRole, lecturerId, department, level, isMo
     return (
       <div style={{padding:14}}>
         <SectionTitle sub={`${filtered.length} classes · Sem 2, 2025/2026`}>
-          {userRole==="Lecturer"?"My Schedule":userRole==="Student"?"My Timetable":"Timetable"}
+          {userRole==="LECTURER"?"My Schedule":userRole==="STUDENT"?"My Timetable":"Timetable"}
         </SectionTitle>
 
         {/* Day selector - scrollable pills */}
@@ -575,7 +577,7 @@ const TimetableGrid = ({timetable, userRole, lecturerId, department, level, isMo
           ))}
         </div>
 
-        {userRole==="Super Admin" && (
+        {userRole==="ADMIN" && (
           <div style={{marginBottom:12}}>
             <select value={filterDept} onChange={e=>setFilterDept(e.target.value)}
               style={{width:"100%",padding:"8px 10px",border:"1px solid #D0D8E8",borderRadius:4,fontSize:13,color:C.text,background:"#fff"}}>
@@ -623,7 +625,7 @@ const TimetableGrid = ({timetable, userRole, lecturerId, department, level, isMo
   return (
     <div style={{padding:22}}>
       <SectionTitle sub={`${filtered.length} scheduled classes · 2025/2026 Session, Semester 2`}>
-        {userRole==="Lecturer"?"My Teaching Schedule":userRole==="Student"?"My Timetable":"Full Timetable"}
+        {userRole==="LECTURER"?"My Teaching Schedule":userRole==="STUDENT"?"My Timetable":"Full Timetable"}
       </SectionTitle>
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
         {DAYS.map(d=>(
@@ -632,7 +634,7 @@ const TimetableGrid = ({timetable, userRole, lecturerId, department, level, isMo
             {d}
           </button>
         ))}
-        {userRole==="Super Admin" && (
+        {userRole==="ADMIN" && (
           <select value={filterDept} onChange={e=>setFilterDept(e.target.value)}
             style={{marginLeft:"auto",padding:"5px 9px",border:"1px solid #D0D8E8",borderRadius:3,fontSize:12,color:C.text,background:"#fff"}}>
             <option>All</option>
@@ -1188,10 +1190,10 @@ export default function App() {
 
   const renderContent=()=>{
     const props={isMobile};
-    if(user.role==="Super Admin"){
+    if(user.role==="ADMIN"){
       switch(activeTab){
         case "dashboard": return <AdminDashboard timetable={timetable} setActiveTab={setActiveTab} {...props}/>;
-        case "timetable": return <TimetableGrid timetable={timetable} userRole="Super Admin" {...props}/>;
+        case "timetable": return <TimetableGrid timetable={timetable} userRole="ADMIN" {...props}/>;
         case "courses":   return <CoursesPage {...props}/>;
         case "lecturers": return <LecturersPage {...props}/>;
         case "rooms":     return <RoomsPage {...props}/>;
@@ -1202,12 +1204,12 @@ export default function App() {
         default: return <AdminDashboard timetable={timetable} setActiveTab={setActiveTab} {...props}/>;
       }
     }
-    if(user.role==="Lecturer"){
+    if(user.role==="LECTURER"){
       if(activeTab==="dashboard") return <LecturerDashboard user={user} timetable={timetable} setActiveTab={setActiveTab} {...props}/>;
       if(activeTab==="timetable") return <TimetableGrid timetable={timetable} userRole="Lecturer" lecturerId={user.lecturerId} {...props}/>;
       if(activeTab==="analytics") return <AnalyticsPage {...props}/>;
     }
-    if(user.role==="Student"){
+    if(user.role==="STUDENT"){
       if(activeTab==="dashboard") return <StudentDashboard user={user} timetable={timetable} setActiveTab={setActiveTab} {...props}/>;
       if(activeTab==="timetable") return <TimetableGrid timetable={timetable} userRole="Student" department={user.department} level={user.level} {...props}/>;
     }
