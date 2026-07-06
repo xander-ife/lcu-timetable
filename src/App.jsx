@@ -391,7 +391,7 @@ const LoginPage = ({onLogin}) => {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loginId: id, password: pass, role: role }),
+      body: JSON.stringify({ loginId: id, password: pass, role: role.toUpperCase() }),
     }
   );
   const data = await response.json();
