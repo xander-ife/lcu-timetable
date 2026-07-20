@@ -1105,9 +1105,59 @@ const AnalyticsPage = ({isMobile}) => {
 
 // ─── STUDENT DASHBOARD ────────────────────────────────────────────────────────
 const StudentDashboard = ({user, timetable, setActiveTab, isMobile}) => {
-  const myClasses=timetable.filter(t=>t.course?.department===user.department&&t.course?.level===user.level);
+  const [myClasses, setMyClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
   const today=DAYS[Math.max(0,(new Date().getDay()-1+5)%5)];
   const todayClasses=myClasses.filter(t=>t.day===today);
+
+  useEffect(() => {
+    const fetchMyTimetable = async () => {
+      try {
+        const token = localStorage.getItem("lcu_token");
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/schedules?session=2025%2F2026&semester=2`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await response.json();
+        if (response.ok && data.data) {
+          // Filter for this student's department and level
+          const dept = user.student?.department?.name || user.department;
+          const level = user.student?.level || user.level;
+          const filtered = data.data
+            .filter(t => t.course?.department?.name === dept && t.course?.level === level)
+            .map((slot, idx) => ({
+              id: slot.id || idx,
+              courseId: slot.courseId,
+              course: {
+                code: slot.course?.code,
+                title: slot.course?.title,
+                department: slot.course?.department?.name,
+                level: slot.course?.level,
+                population: slot.course?.population,
+                units: slot.course?.units,
+              },
+              lecturer: slot.lecturer ? {
+                id: slot.lecturer.id,
+                name: slot.lecturer.name,
+              } : null,
+              room: {
+                name: slot.room?.name,
+                capacity: slot.room?.capacity,
+              },
+              day: slot.day,
+              timeSlot: slot.timeSlot,
+              duration: slot.duration || 2,
+            }));
+          setMyClasses(filtered);
+        }
+      } catch (err) {
+        console.error("Failed to fetch student timetable:", err);
+      } finally {
+        setLoadingClasses(false);
+      }
+    };
+    fetchMyTimetable();
+  }, [user]);
   const downloadPDF = async () => {
   const element = document.getElementById("timetable-content");
   if (!element) { alert("No timetable to download yet."); return; }
